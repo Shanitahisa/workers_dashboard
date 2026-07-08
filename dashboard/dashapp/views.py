@@ -4,11 +4,14 @@ from pathlib import Path
 from datetime import timedelta
 
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import FileResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from django.utils.http import content_disposition_header
 from django.utils import timezone
 
@@ -20,6 +23,7 @@ from .forms import (
 	NotificationPreferenceForm,
 	ProgressUpdateForm,
 	UploadedDocumentForm,
+	WorkerProfileForm,
 )
 from .models import (
 	ActionPoint,
@@ -37,6 +41,33 @@ from .utils.recurrence import expand_events_for_range
 
 def _week_start(dt):
 	return dt - timedelta(days=dt.weekday())
+
+
+@login_required
+def profile_detail(request):
+	return render(request, 'dashapp/profile/detail.html')
+
+
+@login_required
+def profile_edit(request):
+	form = WorkerProfileForm(request.POST or None, instance=request.user)
+	if request.method == 'POST' and form.is_valid():
+		form.save()
+		messages.success(request, 'Profile updated successfully.')
+		return redirect('dashapp:profile')
+	return render(request, 'dashapp/profile/form.html', {'form': form})
+
+
+@require_POST
+@login_required
+@never_cache
+def logout_view(request):
+	logout(request)
+	response = redirect('login')
+	response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+	response['Pragma'] = 'no-cache'
+	response['Expires'] = '0'
+	return response
 
 
 @login_required

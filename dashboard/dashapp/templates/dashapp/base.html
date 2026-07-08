@@ -152,6 +152,8 @@
         .btn:hover { text-decoration: none; background: var(--primary-dark); }
         .btn.secondary { background: #334155; }
         .btn.warn { background: var(--danger); }
+        .logout-form { display: inline-flex; margin: 0; }
+        .logout-form .btn { margin: 0; }
         .toolbar {
             display: grid;
             grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) auto;
@@ -277,6 +279,7 @@
             <a href="{% url 'dashapp:calendar' %}"><span class="icon"></span> Calendar</a>
             <a href="{% url 'dashapp:document_list' %}"><span class="icon"></span> Documents</a>
             <a href="{% url 'dashapp:alert_list' %}"><span class="icon"></span> Alerts</a>
+            <a href="{% url 'dashapp:profile' %}"><span class="icon"></span> Profile</a>
             <a href="{% url 'dashapp:notification_preferences' %}"><span class="icon"></span> Preferences</a>
         </nav>
     </aside>
@@ -288,8 +291,11 @@
             </div>
             <div>
                 {% if user.is_authenticated %}
-                    <span class="user-chip">{{ user.get_full_name|default:user.username }}</span>
-                    <a class="btn secondary" href="{% url 'logout' %}">Logout</a>
+                    <a class="user-chip" href="{% url 'dashapp:profile' %}">{{ user.get_full_name|default:user.username }}</a>
+                    <form class="logout-form" method="post" action="{% url 'dashapp:logout' %}">
+                        {% csrf_token %}
+                        <button class="btn secondary" type="submit">Logout</button>
+                    </form>
                 {% else %}
                     <a class="btn" href="{% url 'login' %}">Login</a>
                 {% endif %}
@@ -341,6 +347,12 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 setSidebar(false);
+            }
+        });
+
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                window.location.reload();
             }
         });
     })();

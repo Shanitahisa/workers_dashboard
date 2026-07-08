@@ -10,6 +10,7 @@ from .models import (
     NotificationPreference,
     ProgressUpdate,
     UploadedDocument,
+    WorkerUser,
 )
 
 
@@ -127,3 +128,9 @@ class UploadedDocumentForm(forms.ModelForm):
             raise ValidationError('The file is too large. Maximum allowed size is 10 MB.')
 
         return uploaded_file
+
+
+class WorkerProfileForm(forms.ModelForm):
+    class Meta:
+        model = WorkerUser
+        fields = ['first_name', 'last_name', 'email', 'phone', 'position', 'department']

@@ -1,0 +1,25 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="section-title">
+        <div>
+            <h3>My Profile</h3>
+            <p class="muted">Review your account and COFTU staff details.</p>
+        </div>
+        <a class="btn" href="{% url 'dashapp:profile_edit' %}">Edit Profile</a>
+    </div>
+    <div class="grid">
+        <div>
+            <p><strong>Name</strong><br>{{ user.get_full_name|default:user.username }}</p>
+            <p><strong>Username</strong><br>{{ user.username }}</p>
+            <p><strong>Email</strong><br>{{ user.email }}</p>
+        </div>
+        <div>
+            <p><strong>Phone</strong><br>{{ user.phone }}</p>
+            <p><strong>Position</strong><br>{{ user.position }}</p>
+            <p><strong>Department</strong><br>{{ user.get_department_display }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

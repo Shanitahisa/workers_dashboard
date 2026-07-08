@@ -1,0 +1,13 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>Edit Profile</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Save Changes</button>
+        <a class="btn secondary" href="{% url 'dashapp:profile' %}">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -6,6 +6,9 @@ app_name = 'dashapp'
 
 urlpatterns = [
     path('', views.dashboard_home, name='home'),
+    path('profile/', views.profile_detail, name='profile'),
+    path('profile/edit/', views.profile_edit, name='profile_edit'),
+    path('logout/', views.logout_view, name='logout'),
     path('action-points/', views.action_point_list, name='action_point_list'),
     path('action-points/create/', views.action_point_create, name='action_point_create'),
     path('action-points/<int:pk>/', views.action_point_detail, name='action_point_detail'),
