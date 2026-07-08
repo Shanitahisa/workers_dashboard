@@ -3,18 +3,36 @@
 {% block content %}
 <div class="card">
     <h3>My Assignments</h3>
-    <table>
-        <tr><th>Action Point</th><th>Due</th><th>Status</th><th>Update</th></tr>
-        {% for assignment in assignments %}
-            <tr>
-                <td><a href="{% url 'dashapp:action_point_detail' assignment.action_point.pk %}">{{ assignment.action_point.title }}</a></td>
-                <td>{{ assignment.action_point.due_date }}</td>
-                <td><span class="status {{ assignment.action_point.status }}">{{ assignment.action_point.get_status_display }}</span></td>
-                <td><a href="{% url 'dashapp:add_progress_update' assignment.pk %}">Add progress</a></td>
-            </tr>
-        {% empty %}
-            <tr><td colspan="4">No assignments yet.</td></tr>
-        {% endfor %}
-    </table>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Action Point</th><th>Due</th><th>Assignment</th><th>Update</th><th>Actions</th></tr>
+            {% for assignment in assignments %}
+                <tr>
+                    <td><a href="{% url 'dashapp:action_point_detail' assignment.action_point.pk %}">{{ assignment.action_point.title }}</a></td>
+                    <td>{{ assignment.action_point.due_date }}</td>
+                    <td>
+                        <span class="status {{ assignment.status }}">{{ assignment.get_status_display }}</span>
+                        {% if assignment.postponed_until %}<br><span class="muted">Until {{ assignment.postponed_until }}</span>{% endif %}
+                    </td>
+                    <td><a href="{% url 'dashapp:add_progress_update' assignment.pk %}">Add progress</a></td>
+                    <td>
+                        <form class="inline-form" method="post" action="{% url 'dashapp:mark_assignment_done' assignment.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button class="btn" type="submit">Done</button>
+                        </form>
+                        <form class="inline-form postpone-form" method="post" action="{% url 'dashapp:postpone_assignment' assignment.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="date" name="postponed_until" aria-label="Postpone until">
+                            <button class="btn secondary" type="submit">Postpone</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No assignments yet.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
 </div>
 {% endblock %}

@@ -85,6 +85,16 @@ class ActionPoint(models.Model):
 
 
 class ActionPointAssignment(models.Model):
+	STATUS_ACTIVE = 'active'
+	STATUS_DONE = 'done'
+	STATUS_POSTPONED = 'postponed'
+
+	STATUS_CHOICES = [
+		(STATUS_ACTIVE, 'Active'),
+		(STATUS_DONE, 'Done'),
+		(STATUS_POSTPONED, 'Postponed'),
+	]
+
 	action_point = models.ForeignKey(ActionPoint, on_delete=models.CASCADE, related_name='assignments')
 	assignee = models.ForeignKey(
 		settings.AUTH_USER_MODEL,
@@ -97,6 +107,8 @@ class ActionPointAssignment(models.Model):
 		related_name='assigned_action_points',
 	)
 	notes = models.TextField(blank=True)
+	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+	postponed_until = models.DateField(null=True, blank=True)
 	assigned_at = models.DateTimeField(auto_now_add=True)
 
 	class Meta:
@@ -197,6 +209,7 @@ class Notification(models.Model):
 	KIND_COMMENT = 'comment'
 	KIND_EVENT = 'event'
 	KIND_REMINDER = 'reminder'
+	KIND_ALERT = 'alert'
 
 	KIND_CHOICES = [
 		(KIND_ASSIGNMENT, 'Assignment'),
@@ -204,6 +217,7 @@ class Notification(models.Model):
 		(KIND_COMMENT, 'Comment'),
 		(KIND_EVENT, 'Event'),
 		(KIND_REMINDER, 'Reminder'),
+		(KIND_ALERT, 'Alert'),
 	]
 
 	recipient = models.ForeignKey(

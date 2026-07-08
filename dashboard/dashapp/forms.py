@@ -30,6 +30,13 @@ ALLOWED_DOCUMENT_CONTENT_TYPES = {
 
 
 class ActionPointForm(forms.ModelForm):
+    assignees = forms.ModelMultipleChoiceField(
+        queryset=WorkerUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username'),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        help_text='Select one or more registered workers.',
+    )
+
     class Meta:
         model = ActionPoint
         fields = ['title', 'description', 'status', 'priority', 'week_start', 'due_date']
@@ -51,6 +58,17 @@ class ActionPointAssignmentForm(forms.ModelForm):
     class Meta:
         model = ActionPointAssignment
         fields = ['assignee', 'notes']
+
+
+class AlertCreateForm(forms.Form):
+    title = forms.CharField(max_length=200)
+    message = forms.CharField(widget=forms.Textarea)
+    recipients = forms.ModelMultipleChoiceField(
+        queryset=WorkerUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username'),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        help_text='Leave blank to send to every active worker.',
+    )
 
 
 class ProgressUpdateForm(forms.ModelForm):

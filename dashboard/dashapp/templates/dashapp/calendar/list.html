@@ -2,22 +2,42 @@
 
 {% block content %}
 <div class="card">
-    <h3>Calendar</h3>
-    <p><a class="btn" href="{% url 'dashapp:calendar_event_create' %}">Create Event</a></p>
-    <table>
-        <tr><th>Event</th><th>Starts</th><th>Ends</th><th>Location</th><th>Visibility</th><th>Recurrence</th></tr>
-        {% for event, start, end in expanded_events %}
-            <tr>
-                <td>{{ event.title }}</td>
-                <td>{{ start|date:"Y-m-d H:i" }}</td>
-                <td>{{ end|date:"Y-m-d H:i" }}</td>
-                <td>{{ event.location|default:"-" }}</td>
-                <td>{{ event.get_visibility_display }}</td>
-                <td>{{ event.get_recurrence_display }}</td>
-            </tr>
-        {% empty %}
-            <tr><td colspan="6">No events found.</td></tr>
+    <div class="section-title">
+        <div>
+            <h3>{{ month_label }}</h3>
+            <p class="muted">Public events are visible to everyone. Private events stay with the creator.</p>
+        </div>
+        <div>
+            <a class="btn secondary" href="{% url 'dashapp:calendar' %}?month={{ previous_month|date:'Y-m' }}">Previous</a>
+            <a class="btn secondary" href="{% url 'dashapp:calendar' %}?month={{ next_month|date:'Y-m' }}">Next</a>
+            {% if can_manage %}
+                <a class="btn" href="{% url 'dashapp:calendar_event_create' %}">Create Event</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="calendar-grid">
+        <div class="calendar-heading">Mon</div>
+        <div class="calendar-heading">Tue</div>
+        <div class="calendar-heading">Wed</div>
+        <div class="calendar-heading">Thu</div>
+        <div class="calendar-heading">Fri</div>
+        <div class="calendar-heading">Sat</div>
+        <div class="calendar-heading">Sun</div>
+        {% for week in calendar_weeks %}
+            {% for day in week %}
+                <div class="calendar-day {% if not day.in_month %}muted-day{% endif %} {% if day.is_today %}today{% endif %}">
+                    <div class="calendar-date">{{ day.date|date:"j" }}</div>
+                    {% for event, start, end in day.events %}
+                        <div class="calendar-event">
+                            <strong>{{ event.title }}</strong>
+                            <span>{{ start|date:"H:i" }}{% if event.location %} | {{ event.location }}{% endif %}</span>
+                        </div>
+                    {% empty %}
+                        <span class="muted empty-day">No events</span>
+                    {% endfor %}
+                </div>
+            {% endfor %}
         {% endfor %}
-    </table>
+    </div>
 </div>
 {% endblock %}

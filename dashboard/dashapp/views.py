@@ -1,10 +1,12 @@
 import mimetypes
+from calendar import Calendar, month_name
 from pathlib import Path
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -18,6 +20,7 @@ from django.utils import timezone
 from .forms import (
 	ActionPointAssignmentForm,
 	ActionPointForm,
+	AlertCreateForm,
 	CalendarEventForm,
 	CommentForm,
 	NotificationPreferenceForm,
@@ -36,6 +39,7 @@ from .models import (
 	UploadedDocument,
 )
 from .permissions import can_manage_action_points, can_update_assignment, can_view_document
+from .services.notifications import create_notification
 from .utils.recurrence import expand_events_for_range
 
 
@@ -147,6 +151,12 @@ def action_point_create(request):
 		action_point = form.save(commit=False)
 		action_point.created_by = request.user
 		action_point.save()
+		for assignee in form.cleaned_data['assignees']:
+			ActionPointAssignment.objects.create(
+				action_point=action_point,
+				assignee=assignee,
+				assigned_by=request.user,
+			)
 		messages.success(request, 'Action point created successfully.')
 		return redirect('dashapp:action_point_detail', pk=action_point.pk)
 
@@ -223,6 +233,41 @@ def my_assignments(request):
 
 
 @login_required
+@require_POST
+def mark_assignment_done(request, pk):
+	assignment = get_object_or_404(ActionPointAssignment, pk=pk)
+	if not can_update_assignment(request.user, assignment):
+		return HttpResponseForbidden('Not allowed')
+
+	assignment.status = ActionPointAssignment.STATUS_DONE
+	assignment.postponed_until = None
+	assignment.save(update_fields=['status', 'postponed_until'])
+	if not assignment.action_point.assignments.exclude(status=ActionPointAssignment.STATUS_DONE).exists():
+		assignment.action_point.status = ActionPoint.STATUS_DONE
+		assignment.action_point.save(update_fields=['status', 'updated_at'])
+	messages.success(request, 'Assignment marked as done.')
+	return redirect(request.POST.get('next') or 'dashapp:my_assignments')
+
+
+@login_required
+@require_POST
+def postpone_assignment(request, pk):
+	assignment = get_object_or_404(ActionPointAssignment, pk=pk)
+	if not can_update_assignment(request.user, assignment):
+		return HttpResponseForbidden('Not allowed')
+
+	postponed_until = request.POST.get('postponed_until') or None
+	assignment.status = ActionPointAssignment.STATUS_POSTPONED
+	assignment.postponed_until = postponed_until
+	assignment.save(update_fields=['status', 'postponed_until'])
+	if assignment.action_point.status != ActionPoint.STATUS_DONE:
+		assignment.action_point.status = ActionPoint.STATUS_BLOCKED
+		assignment.action_point.save(update_fields=['status', 'updated_at'])
+	messages.success(request, 'Assignment postponed.')
+	return redirect(request.POST.get('next') or 'dashapp:my_assignments')
+
+
+@login_required
 def add_progress_update(request, pk):
 	assignment = get_object_or_404(ActionPointAssignment, pk=pk)
 	if not can_update_assignment(request.user, assignment):
@@ -254,14 +299,54 @@ def add_progress_update(request, pk):
 
 @login_required
 def calendar_view(request):
-	now = timezone.now()
-	start = now - timedelta(days=7)
-	end = now + timedelta(days=30)
+	today = timezone.localdate()
+	month_param = request.GET.get('month')
+	try:
+		if month_param:
+			year, month = [int(part) for part in month_param.split('-', 1)]
+		else:
+			year, month = today.year, today.month
+	except (TypeError, ValueError):
+		year, month = today.year, today.month
+
+	month_start = today.replace(year=year, month=month, day=1)
+	weeks = Calendar(firstweekday=0).monthdatescalendar(year, month)
+	start_datetime = timezone.make_aware(datetime.combine(weeks[0][0], time.min))
+	end_datetime = timezone.make_aware(datetime.combine(weeks[-1][-1], time.max))
 	events = CalendarEvent.objects.filter(
 		Q(visibility=CalendarEvent.VISIBILITY_PUBLIC) | Q(created_by=request.user)
 	)
-	expanded_events = expand_events_for_range(events, start, end)
-	return render(request, 'dashapp/calendar/list.html', {'expanded_events': expanded_events})
+	expanded_events = expand_events_for_range(events, start_datetime, end_datetime)
+	events_by_day = {}
+	for event, start, end in expanded_events:
+		events_by_day.setdefault(start.date(), []).append((event, start, end))
+
+	calendar_weeks = [
+		[
+			{
+				'date': day,
+				'in_month': day.month == month,
+				'is_today': day == today,
+				'events': events_by_day.get(day, []),
+			}
+			for day in week
+		]
+		for week in weeks
+	]
+	previous_month = (month_start - timedelta(days=1)).replace(day=1)
+	next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+	return render(
+		request,
+		'dashapp/calendar/list.html',
+		{
+			'calendar_weeks': calendar_weeks,
+			'month_label': f'{month_name[month]} {year}',
+			'previous_month': previous_month,
+			'next_month': next_month,
+			'can_manage': can_manage_action_points(request.user),
+		},
+	)
 
 
 @login_required
@@ -274,6 +359,16 @@ def calendar_event_create(request):
 		event = form.save(commit=False)
 		event.created_by = request.user
 		event.save()
+		if event.visibility == CalendarEvent.VISIBILITY_PUBLIC:
+			user_model = get_user_model()
+			for recipient in user_model.objects.filter(is_active=True):
+				create_notification(
+					recipient=recipient,
+					title='New public calendar event',
+					message=f'{event.title} starts on {event.start_datetime:%Y-%m-%d %H:%M}.',
+					kind=Notification.KIND_EVENT,
+					event=event,
+				)
 		messages.success(request, 'Calendar event created.')
 		return redirect('dashapp:calendar')
 
@@ -286,6 +381,26 @@ def alert_list(request):
 	paginator = Paginator(alerts, 20)
 	page_obj = paginator.get_page(request.GET.get('page'))
 	return render(request, 'dashapp/alerts/list.html', {'page_obj': page_obj})
+
+
+@login_required
+def alert_create(request):
+	form = AlertCreateForm(request.POST or None)
+	if request.method == 'POST' and form.is_valid():
+		recipients = form.cleaned_data['recipients']
+		if not recipients:
+			recipients = get_user_model().objects.filter(is_active=True)
+		for recipient in recipients:
+			create_notification(
+				recipient=recipient,
+				title=form.cleaned_data['title'],
+				message=form.cleaned_data['message'],
+				kind=Notification.KIND_ALERT,
+			)
+		messages.success(request, 'Alert sent successfully.')
+		return redirect('dashapp:alert_list')
+
+	return render(request, 'dashapp/alerts/form.html', {'form': form})
 
 
 @login_required
