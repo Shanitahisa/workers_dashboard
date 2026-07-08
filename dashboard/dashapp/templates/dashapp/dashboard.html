@@ -1,0 +1,83 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="hero">
+    <h2>This Week: {{ week_start }} to {{ week_end }}</h2>
+    <p>Track assignments, meetings, alerts, and shared records from one secure workspace.</p>
+</div>
+<div class="metric-row">
+    <div class="metric">
+        <span>Unread alerts</span>
+        <strong>{{ unread_alerts }}</strong>
+    </div>
+    <div class="metric">
+        <span>Visible action points</span>
+        <strong>{{ action_points|length }}</strong>
+    </div>
+    <div class="metric">
+        <span>Recent documents</span>
+        <strong>{{ recent_documents|length }}</strong>
+    </div>
+</div>
+<div class="grid">
+    <div class="card">
+        <div class="section-title">
+            <h4>Weekly Action Points</h4>
+            <a href="{% url 'dashapp:action_point_list' %}">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <tr><th>Title</th><th>Status</th><th>Due</th></tr>
+                {% for item in action_points %}
+                    <tr>
+                        <td><a href="{% url 'dashapp:action_point_detail' item.pk %}">{{ item.title }}</a></td>
+                        <td><span class="status {{ item.status }}">{{ item.get_status_display }}</span></td>
+                        <td>{{ item.due_date }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No action points yet.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    <div class="card">
+        <div class="section-title">
+            <h4>Upcoming Events</h4>
+            <a href="{% url 'dashapp:calendar' %}">Calendar</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <tr><th>Event</th><th>When</th><th>Where</th></tr>
+                {% for event, start, end in expanded_events %}
+                    <tr>
+                        <td>{{ event.title }}</td>
+                        <td>{{ start|date:"Y-m-d H:i" }}</td>
+                        <td>{{ event.location|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No upcoming events.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="section-title">
+        <h4>Reports, Minutes and Shared Documents</h4>
+        <a class="btn" href="{% url 'dashapp:document_upload' %}">Upload Document</a>
+    </div>
+    <div class="document-list">
+        {% for document in recent_documents %}
+            <div class="document-item">
+                <div>
+                    <strong>{{ document.title }}</strong>
+                    <div class="muted">{{ document.get_category_display }} | {{ document.uploaded_at|date:"Y-m-d H:i" }} | {{ document.uploaded_by.username }}</div>
+                </div>
+                <a href="{% url 'dashapp:document_download' document.pk %}">Download</a>
+            </div>
+        {% empty %}
+            <p class="muted">No documents uploaded yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>Progress Update for {{ assignment.action_point.title }}</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Save Update</button>
+    </form>
+</div>
+{% endblock %}

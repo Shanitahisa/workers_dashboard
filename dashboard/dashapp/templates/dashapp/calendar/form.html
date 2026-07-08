@@ -1,0 +1,12 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>Create Calendar Event</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Save Event</button>
+    </form>
+</div>
+{% endblock %}

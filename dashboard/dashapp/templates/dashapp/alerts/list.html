@@ -1,0 +1,27 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>Alerts and Reminders</h3>
+    <table>
+        <tr><th>Type</th><th>Title</th><th>Message</th><th>Time</th><th>Status</th></tr>
+        {% for alert in page_obj %}
+            <tr>
+                <td>{{ alert.get_kind_display }}</td>
+                <td>{{ alert.title }}</td>
+                <td>{{ alert.message }}</td>
+                <td>{{ alert.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    {% if alert.is_read %}
+                        Read
+                    {% else %}
+                        <a class="btn secondary" href="{% url 'dashapp:mark_alert_read' alert.pk %}">Mark Read</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5">No alerts yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

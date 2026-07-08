@@ -1,0 +1,20 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>My Assignments</h3>
+    <table>
+        <tr><th>Action Point</th><th>Due</th><th>Status</th><th>Update</th></tr>
+        {% for assignment in assignments %}
+            <tr>
+                <td><a href="{% url 'dashapp:action_point_detail' assignment.action_point.pk %}">{{ assignment.action_point.title }}</a></td>
+                <td>{{ assignment.action_point.due_date }}</td>
+                <td><span class="status {{ assignment.action_point.status }}">{{ assignment.action_point.get_status_display }}</span></td>
+                <td><a href="{% url 'dashapp:add_progress_update' assignment.pk %}">Add progress</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">No assignments yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

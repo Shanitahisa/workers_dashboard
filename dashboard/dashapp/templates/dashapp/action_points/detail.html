@@ -1,0 +1,62 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>{{ action_point.title }}</h3>
+    <p>{{ action_point.description }}</p>
+    <p>
+        <span class="status {{ action_point.status }}">{{ action_point.get_status_display }}</span>
+        <strong>Due:</strong> {{ action_point.due_date }}
+    </p>
+    {% if can_manage %}
+        <p><a class="btn" href="{% url 'dashapp:assign_action_point' action_point.pk %}">Assign Worker</a></p>
+    {% endif %}
+</div>
+<div class="grid">
+    <div class="card">
+        <h4>Assignments</h4>
+        <table>
+            <tr><th>Assignee</th><th>Assigned By</th><th>Progress</th></tr>
+            {% for assignment in assignments %}
+                <tr>
+                    <td>{{ assignment.assignee.username }}</td>
+                    <td>{{ assignment.assigned_by.username }}</td>
+                    <td><a href="{% url 'dashapp:add_progress_update' assignment.pk %}">Add update</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No assignments yet.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="card">
+        <h4>Progress Timeline</h4>
+        {% for update in progress_updates %}
+            <p>
+                <strong>{{ update.updated_by.username }}</strong>
+                ({{ update.percent_complete }}%, {{ update.get_status_display }})<br>
+                {{ update.update_text }}<br>
+                <small class="muted">{{ update.created_at|date:"Y-m-d H:i" }}</small>
+            </p>
+        {% empty %}
+            <p>No progress updates yet.</p>
+        {% endfor %}
+    </div>
+</div>
+<div class="card">
+    <h4>Comments</h4>
+    {% for comment in comments %}
+        <p>
+            <strong>{{ comment.author.username }}</strong>: {{ comment.message }}<br>
+            <small class="muted">{{ comment.created_at|date:"Y-m-d H:i" }}</small>
+        </p>
+    {% empty %}
+        <p>No comments yet.</p>
+    {% endfor %}
+    <hr>
+    <form method="post">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <button class="btn" type="submit" name="add_comment" value="1">Add Comment</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'dashapp/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h3>Upload Document</h3>
+    <p class="muted">Accepted files: PDF, Word, Excel, PowerPoint, text, and CSV. Maximum file size is 10 MB.</p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Upload</button>
+        <a class="btn secondary" href="{% url 'dashapp:document_list' %}">Cancel</a>
+    </form>
+</div>
+{% endblock %}
