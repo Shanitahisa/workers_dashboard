@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="card">
-    <h3>Create Calendar Event</h3>
+    <h3>{{ form_title|default:"Create Calendar Event" }}</h3>
     {% if can_create_for_others %}
         <p class="muted">As Admin, you can choose another worker in the For worker field. Leaving it blank creates the event for yourself.</p>
     {% else %}
@@ -11,7 +11,8 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button class="btn" type="submit">Save Event</button>
+        <button class="btn" type="submit">{{ submit_label|default:"Save Event" }}</button>
+        <a class="btn secondary" href="{% url 'dashapp:calendar' %}">Cancel</a>
     </form>
 </div>
 {% endblock %}

@@ -357,6 +357,7 @@ def calendar_event_create(request):
 		event = form.save(commit=False)
 		event.created_by = request.user
 		event.owner = form.cleaned_data.get('owner') or request.user
+		form.apply_schedule(event)
 		event.save()
 		if event.visibility == CalendarEvent.VISIBILITY_PUBLIC:
 			user_model = get_user_model()
@@ -385,8 +386,49 @@ def calendar_event_create(request):
 		{
 			'form': form,
 			'can_create_for_others': can_create_events_for_others(request.user),
+			'form_title': 'Create Calendar Event',
+			'submit_label': 'Save Event',
 		},
 	)
+
+
+@login_required
+def calendar_event_edit(request, pk):
+	event = get_object_or_404(CalendarEvent, pk=pk)
+	if event.created_by_id != request.user.id:
+		return HttpResponseForbidden('Not allowed')
+
+	form = CalendarEventForm(request.POST or None, instance=event, current_user=request.user)
+	if request.method == 'POST' and form.is_valid():
+		event = form.save(commit=False)
+		event.owner = form.cleaned_data.get('owner') or request.user
+		form.apply_schedule(event)
+		event.save()
+		messages.success(request, 'Calendar event updated.')
+		return redirect('dashapp:calendar')
+
+	return render(
+		request,
+		'dashapp/calendar/form.html',
+		{
+			'form': form,
+			'can_create_for_others': can_create_events_for_others(request.user),
+			'form_title': 'Edit Calendar Event',
+			'submit_label': 'Save Changes',
+		},
+	)
+
+
+@login_required
+@require_POST
+def calendar_event_delete(request, pk):
+	event = get_object_or_404(CalendarEvent, pk=pk)
+	if event.created_by_id != request.user.id:
+		return HttpResponseForbidden('Not allowed')
+
+	event.delete()
+	messages.success(request, 'Calendar event deleted.')
+	return redirect('dashapp:calendar')
 
 
 @login_required

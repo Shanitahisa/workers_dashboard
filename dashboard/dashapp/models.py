@@ -187,6 +187,7 @@ class CalendarEvent(models.Model):
 	RECURRENCE_DAILY = 'daily'
 	RECURRENCE_WEEKLY = 'weekly'
 	RECURRENCE_MONTHLY = 'monthly'
+	RECURRENCE_YEARLY = 'yearly'
 	VISIBILITY_PUBLIC = 'public'
 	VISIBILITY_PRIVATE = 'private'
 
@@ -195,6 +196,7 @@ class CalendarEvent(models.Model):
 		(RECURRENCE_DAILY, 'Daily'),
 		(RECURRENCE_WEEKLY, 'Weekly'),
 		(RECURRENCE_MONTHLY, 'Monthly'),
+		(RECURRENCE_YEARLY, 'Yearly'),
 	]
 	VISIBILITY_CHOICES = [
 		(VISIBILITY_PUBLIC, 'Public'),

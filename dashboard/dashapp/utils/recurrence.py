@@ -44,6 +44,9 @@ def expand_events_for_range(events, range_start, range_end):
             elif event.recurrence == CalendarEvent.RECURRENCE_MONTHLY:
                 occurrence_start = _add_months(occurrence_start, event.recurrence_interval)
                 occurrence_end = _add_months(occurrence_end, event.recurrence_interval)
+            elif event.recurrence == CalendarEvent.RECURRENCE_YEARLY:
+                occurrence_start = _add_months(occurrence_start, 12 * event.recurrence_interval)
+                occurrence_end = _add_months(occurrence_end, 12 * event.recurrence_interval)
             else:
                 break
 

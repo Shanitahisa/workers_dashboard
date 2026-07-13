@@ -31,6 +31,15 @@
                         <div class="calendar-event">
                             <strong>{{ event.title }}</strong>
                             <span>{{ start|date:"H:i" }}{% if event.location %} | {{ event.location }}{% endif %}</span>
+                            {% if event.created_by_id == user.id %}
+                                <div class="calendar-event-actions">
+                                    <a href="{% url 'dashapp:calendar_event_edit' event.pk %}">Edit</a>
+                                    <form method="post" action="{% url 'dashapp:calendar_event_delete' event.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            {% endif %}
                         </div>
                     {% empty %}
                         <span class="muted empty-day">No events</span>
