@@ -16,14 +16,14 @@ from .models import (
 
 @admin.register(WorkerUser)
 class WorkerUserAdmin(UserAdmin):
-	list_display = ('username', 'email', 'first_name', 'last_name', 'phone', 'position', 'department', 'is_staff')
-	search_fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'position')
-	list_filter = ('department', 'is_staff', 'is_superuser', 'is_active')
+	list_display = ('username', 'email', 'first_name', 'last_name', 'phone', 'position', 'position_other', 'department', 'is_staff')
+	search_fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'position', 'position_other')
+	list_filter = ('position', 'department', 'is_staff', 'is_superuser', 'is_active')
 	fieldsets = UserAdmin.fieldsets + (
 		(
 			'COFTU Profile',
 			{
-				'fields': ('phone', 'position', 'department'),
+				'fields': ('phone', 'position', 'position_other', 'department'),
 			},
 		),
 	)
@@ -32,7 +32,7 @@ class WorkerUserAdmin(UserAdmin):
 			'COFTU Profile',
 			{
 				'classes': ('wide',),
-				'fields': ('email', 'first_name', 'last_name', 'phone', 'position', 'department'),
+				'fields': ('email', 'first_name', 'last_name', 'phone', 'position', 'position_other', 'department'),
 			},
 		),
 	)
@@ -68,9 +68,9 @@ class CommentAdmin(admin.ModelAdmin):
 
 @admin.register(CalendarEvent)
 class CalendarEventAdmin(admin.ModelAdmin):
-	list_display = ('title', 'location', 'start_datetime', 'end_datetime', 'visibility', 'recurrence')
+	list_display = ('title', 'owner', 'created_by', 'location', 'start_datetime', 'end_datetime', 'visibility', 'recurrence')
 	list_filter = ('visibility', 'recurrence', 'start_datetime')
-	search_fields = ('title', 'location', 'description')
+	search_fields = ('title', 'location', 'description', 'owner__username', 'created_by__username')
 
 
 @admin.register(Notification)

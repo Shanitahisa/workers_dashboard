@@ -84,6 +84,21 @@ class CommentForm(forms.ModelForm):
 
 
 class CalendarEventForm(forms.ModelForm):
+    owner = forms.ModelChoiceField(
+        queryset=WorkerUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username'),
+        required=False,
+        label='For worker',
+        help_text='Admins can choose whose calendar this event belongs to.',
+    )
+
+    def __init__(self, *args, current_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_user = current_user
+        if not current_user or not (
+            current_user.is_superuser or current_user.position == WorkerUser.POSITION_ADMIN
+        ):
+            self.fields.pop('owner')
+
     class Meta:
         model = CalendarEvent
         fields = [
@@ -93,6 +108,7 @@ class CalendarEventForm(forms.ModelForm):
             'start_datetime',
             'end_datetime',
             'visibility',
+            'owner',
             'recurrence',
             'recurrence_interval',
             'recurrence_until',
@@ -109,6 +125,7 @@ class CalendarEventForm(forms.ModelForm):
         end_datetime = cleaned_data.get('end_datetime')
         recurrence = cleaned_data.get('recurrence')
         recurrence_until = cleaned_data.get('recurrence_until')
+        owner = cleaned_data.get('owner')
 
         if start_datetime and end_datetime and end_datetime <= start_datetime:
             raise forms.ValidationError('Event end time must be after start time.')
@@ -116,6 +133,8 @@ class CalendarEventForm(forms.ModelForm):
         if recurrence and recurrence != CalendarEvent.RECURRENCE_NONE and recurrence_until and start_datetime:
             if recurrence_until < start_datetime.date():
                 raise forms.ValidationError('Recurrence end date cannot be before start date.')
+        if 'owner' in self.fields and not owner:
+            cleaned_data['owner'] = self.current_user
 
         return cleaned_data
 
@@ -151,4 +170,14 @@ class UploadedDocumentForm(forms.ModelForm):
 class WorkerProfileForm(forms.ModelForm):
     class Meta:
         model = WorkerUser
-        fields = ['first_name', 'last_name', 'email', 'phone', 'position', 'department']
+        fields = ['first_name', 'last_name', 'email', 'phone', 'position', 'position_other', 'department']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        position = cleaned_data.get('position')
+        position_other = cleaned_data.get('position_other')
+        if position == WorkerUser.POSITION_OTHER and not position_other:
+            raise ValidationError('Please mention the post when selecting Other.')
+        if position != WorkerUser.POSITION_OTHER:
+            cleaned_data['position_other'] = ''
+        return cleaned_data

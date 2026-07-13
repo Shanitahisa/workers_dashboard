@@ -19,7 +19,9 @@
         </div>
         <button class="btn" type="submit">Filter</button>
     </form>
-    <p><a class="btn" href="{% url 'dashapp:action_point_create' %}">Create Action Point</a></p>
+    {% if can_manage %}
+        <p><a class="btn" href="{% url 'dashapp:action_point_create' %}">Create Action Point</a></p>
+    {% endif %}
     <table>
         <tr><th>Title</th><th>Status</th><th>Priority</th><th>Due</th></tr>
         {% for item in page_obj %}

@@ -343,14 +343,14 @@
             <a href="{% url 'dashapp:document_list' %}"><span class="icon"></span> Documents</a>
             <a href="{% url 'dashapp:alert_list' %}"><span class="icon"></span> Alerts</a>
             <a href="{% url 'dashapp:profile' %}"><span class="icon"></span> Profile</a>
-            <a href="{% url 'dashapp:notification_preferences' %}"><span class="icon"></span> Preferences</a>
+            <!-- <a href="{% url 'dashapp:notification_preferences' %}"><span class="icon"></span> Preferences</a> -->
         </nav>
     </aside>
     <div class="content">
         <header class="topbar">
             <div class="topbar-title">
                 <button class="menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open menu"><span></span></button>
-                <h1>COFTU Workers Dashboard</h1>
+                <h1>COFTU Secretariat Dashboard</h1>
             </div>
             <div>
                 {% if user.is_authenticated %}

@@ -13,9 +13,15 @@ def in_group(user, group_name):
 
 
 def can_manage_action_points(user):
-    return user.is_authenticated and (
-        user.is_superuser or in_group(user, 'Admin') or in_group(user, 'Manager')
-    )
+    if not user.is_authenticated:
+        return False
+    return user.is_superuser or user.position in ('admin', 'ict_assistant')
+
+
+def can_create_events_for_others(user):
+    if not user.is_authenticated:
+        return False
+    return user.is_superuser or user.position == 'admin'
 
 
 def can_update_assignment(user, assignment):

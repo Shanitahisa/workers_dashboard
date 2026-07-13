@@ -5,12 +5,12 @@
     <div class="section-title">
         <div>
             <h3>{{ month_label }}</h3>
-            <p class="muted">Public events are visible to everyone. Private events stay with the creator.</p>
+            <p class="muted">Public events are visible to everyone. Private events stay with the owner and creator.</p>
         </div>
         <div>
             <a class="btn secondary" href="{% url 'dashapp:calendar' %}?month={{ previous_month|date:'Y-m' }}">Previous</a>
             <a class="btn secondary" href="{% url 'dashapp:calendar' %}?month={{ next_month|date:'Y-m' }}">Next</a>
-            {% if can_manage %}
+            {% if can_create_event %}
                 <a class="btn" href="{% url 'dashapp:calendar_event_create' %}">Create Event</a>
             {% endif %}
         </div>

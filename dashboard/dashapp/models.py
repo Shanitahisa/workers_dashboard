@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -14,15 +15,29 @@ def document_upload_path(instance, filename):
 
 class WorkerUser(AbstractUser):
 	DEPARTMENT_SECRETARIATE = 'secretariate'
+	POSITION_ADMIN = 'admin'
+	POSITION_ICT_ASSISTANT = 'ict_assistant'
+	POSITION_LEGAL = 'legal'
+	POSITION_SECRETARY_GENERAL = 'secretary_general'
+	POSITION_OTHER = 'other'
+
 	DEPARTMENT_CHOICES = [
 		(DEPARTMENT_SECRETARIATE, 'Secretariate'),
+	]
+	POSITION_CHOICES = [
+		(POSITION_ADMIN, 'Admin'),
+		(POSITION_ICT_ASSISTANT, 'ICT Assistant'),
+		(POSITION_LEGAL, 'Legal'),
+		(POSITION_SECRETARY_GENERAL, 'Secretary General'),
+		(POSITION_OTHER, 'Other'),
 	]
 
 	first_name = models.CharField(max_length=150)
 	last_name = models.CharField(max_length=150)
 	email = models.EmailField(unique=True)
 	phone = models.CharField(max_length=30)
-	position = models.CharField(max_length=120)
+	position = models.CharField(max_length=40, choices=POSITION_CHOICES)
+	position_other = models.CharField(max_length=120, blank=True)
 	department = models.CharField(
 		max_length=40,
 		choices=DEPARTMENT_CHOICES,
@@ -30,6 +45,13 @@ class WorkerUser(AbstractUser):
 	)
 
 	REQUIRED_FIELDS = ['email', 'first_name', 'last_name', 'phone', 'position', 'department']
+
+	def clean(self):
+		super().clean()
+		if self.position == self.POSITION_OTHER and not self.position_other:
+			raise ValidationError({'position_other': 'Please mention the post when selecting Other.'})
+		if self.position != self.POSITION_OTHER:
+			self.position_other = ''
 
 	def __str__(self):
 		return f'{self.first_name} {self.last_name} ({self.username})'
@@ -192,6 +214,13 @@ class CalendarEvent(models.Model):
 		settings.AUTH_USER_MODEL,
 		on_delete=models.PROTECT,
 		related_name='created_calendar_events',
+	)
+	owner = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null=True,
+		blank=True,
+		on_delete=models.PROTECT,
+		related_name='owned_calendar_events',
 	)
 	created_at = models.DateTimeField(auto_now_add=True)
 

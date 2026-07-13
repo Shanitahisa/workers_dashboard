@@ -38,7 +38,7 @@ from .models import (
 	ProgressUpdate,
 	UploadedDocument,
 )
-from .permissions import can_manage_action_points, can_update_assignment, can_view_document
+from .permissions import can_create_events_for_others, can_manage_action_points, can_update_assignment, can_view_document
 from .services.notifications import create_notification
 from .utils.recurrence import expand_events_for_range
 
@@ -86,7 +86,7 @@ def dashboard_home(request):
 		action_points = ActionPoint.objects.filter(assignments__assignee=request.user).distinct()
 
 	events = CalendarEvent.objects.filter(
-		Q(visibility=CalendarEvent.VISIBILITY_PUBLIC) | Q(created_by=request.user)
+		Q(visibility=CalendarEvent.VISIBILITY_PUBLIC) | Q(created_by=request.user) | Q(owner=request.user)
 	)
 	expanded_events = expand_events_for_range(events, now, now + timedelta(days=14))
 	unread_alerts = Notification.objects.filter(recipient=request.user, is_read=False).count()
@@ -137,6 +137,7 @@ def action_point_list(request):
 			'query': query,
 			'status': status,
 			'status_choices': ActionPoint.STATUS_CHOICES,
+			'can_manage': can_manage_action_points(request.user),
 		},
 	)
 
@@ -314,7 +315,7 @@ def calendar_view(request):
 	start_datetime = timezone.make_aware(datetime.combine(weeks[0][0], time.min))
 	end_datetime = timezone.make_aware(datetime.combine(weeks[-1][-1], time.max))
 	events = CalendarEvent.objects.filter(
-		Q(visibility=CalendarEvent.VISIBILITY_PUBLIC) | Q(created_by=request.user)
+		Q(visibility=CalendarEvent.VISIBILITY_PUBLIC) | Q(created_by=request.user) | Q(owner=request.user)
 	)
 	expanded_events = expand_events_for_range(events, start_datetime, end_datetime)
 	events_by_day = {}
@@ -344,20 +345,18 @@ def calendar_view(request):
 			'month_label': f'{month_name[month]} {year}',
 			'previous_month': previous_month,
 			'next_month': next_month,
-			'can_manage': can_manage_action_points(request.user),
+			'can_create_event': True,
 		},
 	)
 
 
 @login_required
 def calendar_event_create(request):
-	if not can_manage_action_points(request.user):
-		return HttpResponseForbidden('Not allowed')
-
-	form = CalendarEventForm(request.POST or None)
+	form = CalendarEventForm(request.POST or None, current_user=request.user)
 	if request.method == 'POST' and form.is_valid():
 		event = form.save(commit=False)
 		event.created_by = request.user
+		event.owner = form.cleaned_data.get('owner') or request.user
 		event.save()
 		if event.visibility == CalendarEvent.VISIBILITY_PUBLIC:
 			user_model = get_user_model()
@@ -369,10 +368,25 @@ def calendar_event_create(request):
 					kind=Notification.KIND_EVENT,
 					event=event,
 				)
+		elif event.owner_id != request.user.id:
+			create_notification(
+				recipient=event.owner,
+				title='New private calendar event',
+				message=f'{request.user.username} added {event.title} to your calendar.',
+				kind=Notification.KIND_EVENT,
+				event=event,
+			)
 		messages.success(request, 'Calendar event created.')
 		return redirect('dashapp:calendar')
 
-	return render(request, 'dashapp/calendar/form.html', {'form': form})
+	return render(
+		request,
+		'dashapp/calendar/form.html',
+		{
+			'form': form,
+			'can_create_for_others': can_create_events_for_others(request.user),
+		},
+	)
 
 
 @login_required

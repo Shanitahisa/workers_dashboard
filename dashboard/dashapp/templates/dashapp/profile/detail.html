@@ -17,7 +17,7 @@
         </div>
         <div>
             <p><strong>Phone</strong><br>{{ user.phone }}</p>
-            <p><strong>Position</strong><br>{{ user.position }}</p>
+            <p><strong>Position</strong><br>{{ user.get_position_display }}{% if user.position_other %}: {{ user.position_other }}{% endif %}</p>
             <p><strong>Department</strong><br>{{ user.get_department_display }}</p>
         </div>
     </div>

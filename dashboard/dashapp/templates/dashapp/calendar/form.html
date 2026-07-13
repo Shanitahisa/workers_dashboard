@@ -3,6 +3,11 @@
 {% block content %}
 <div class="card">
     <h3>Create Calendar Event</h3>
+    {% if can_create_for_others %}
+        <p class="muted">As Admin, you can choose another worker in the For worker field. Leaving it blank creates the event for yourself.</p>
+    {% else %}
+        <p class="muted">This event will be created for your own calendar.</p>
+    {% endif %}
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
